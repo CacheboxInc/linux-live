@@ -52,6 +52,7 @@ Note:
   - squashfs-tools
   - genisoimage or mkisofs
   - zip
+  - xorriso
 
 
 Author: Tomas M. <http://www.linux-live.org>
