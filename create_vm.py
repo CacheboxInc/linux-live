@@ -211,7 +211,6 @@ def delete_vms():
             help='Name of VM to create')
 
     args = parser.parse_args()
-
     si = connect_host(args)
     name = args.vmname
     dc = si.content.rootFolder.childEntity[0]
@@ -231,9 +230,9 @@ def delete_vms():
 
 def connect_host(args):
     si = connect.SmartConnectNoSSL(host=args.host,
-                                                 user=args.user,
-                                                 pwd=args.password,
-                                                 port=int(args.port))
+                                   user=args.user,
+                                   pwd=args.password,
+                                   port=int(args.port))
     if not si:
         print("Could not connect using specified username and password")
         return -1
