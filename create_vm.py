@@ -80,10 +80,11 @@ def create_dummy_vm(vm_name, service_instance, vm_folder, resource_pool, datasto
                                suspendDirectory=None,
                                vmPathName=datastore_path)
 
+    # For EFI boot add firmware='EFI'
     config = vim.vm.ConfigSpec(name=vm_name, memoryMB=2048, numCPUs=2,
                                files=vmx_file, guestId=guestId,
                                version='vmx-13')
-
+    
     print("\nCreating VM {}...".format(vm_name))
     task = vm_folder.CreateVM_Task(config=config, pool=resource_pool)
     tasks.wait_for_tasks(service_instance, [task])
@@ -176,8 +177,6 @@ def attach_iso(si, datastore, args, vm_name, boot=True):
                 "on '%s' to attach ISO '%s'", args.vmname, iso_path)
         return
 
-    #iso_path = 'microVM-IP.iso'
-
     spec.device.backing = vim.vm.device.VirtualCdrom.IsoBackingInfo()
     spec.device.backing.fileName = "[%s] %s" % (args.datastore, args.iso_path)
     spec.device.backing.datastore = datastore
@@ -204,18 +203,47 @@ def power_on(vm):
     WaitForTask(vm.PowerOn())
     print("--------------------")
 
-def main():
+def delete_vms():
+    parser = cli.build_arg_parser()
     
-    args = get_args()
-    service_instance = connect.SmartConnectNoSSL(host=args.host,
-                                                user=args.user,
-                                                pwd=args.password,
-                                                port=int(args.port))
-    if not service_instance:
+    parser.add_argument('-vmname',
+            required=True,
+            help='Name of VM to create')
+
+    args = parser.parse_args()
+
+    si = connect_host(args)
+    name = args.vmname
+    dc = si.content.rootFolder.childEntity[0]
+    
+    os_types = ["ubuntuGuest", "ubuntu64Guest", "windows8Server64Guest", \
+                "windows9Server64Guest", "rhel6Guest", "rhel6_64Guest", \
+                "rhel7_64Guest", "sles12_64Guest", "centos7_64Guest","winLonghornGuest"]
+
+    for os in os_types :
+        vm_name = name + "-" + os
+        vm = si.content.searchIndex.FindChild(dc.vmFolder, vm_name)
+        print("\nPower off {} ..".format(vm_name))
+        WaitForTask(vm.PowerOffVM_Task())
+        
+        print("Deleting vm {}...".format(vm_name))
+        WaitForTask(vm.Destroy_Task())
+
+def connect_host(args):
+    si = connect.SmartConnectNoSSL(host=args.host,
+                                                 user=args.user,
+                                                 pwd=args.password,
+                                                 port=int(args.port))
+    if not si:
         print("Could not connect using specified username and password")
         return -1
     print("Connected to vCenter")
-    atexit.register(connect.Disconnect, service_instance)
+    atexit.register(connect.Disconnect, si)
+    return si
+
+def main():
+    args = get_args()
+    service_instance = connect_host(args) 
     
     content = service_instance.RetrieveContent()
     vmfolder = get_obj(content, [vim.Folder], args.folder)
