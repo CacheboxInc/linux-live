@@ -1,0 +1,12 @@
+[Unit]
+Description=MicroVM service.
+After = multi-user.target
+Requires = multi-user.target
+
+[Service]
+Type=simple
+ExecStart=/bin/bash /root/micro.sh
+
+[Install]
+WantedBy=multi-user.target
+
