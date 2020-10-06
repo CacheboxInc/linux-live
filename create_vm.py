@@ -6,7 +6,6 @@ Run script cmd :-  python3.6 create_vm.py -s 192.168.10.122
                                           -u administrator@vsphere.local 
                                           -p Root@123 
                                           -d OC_Datastore 
-                                          -datacenter OC_Datacenter
                                           -folder 'vm' -Rpool OC_RPool  
                                           -vmname mz -nw 'VM Network'
                                           -iso_path 'microVM-IP.iso'
@@ -32,10 +31,6 @@ def get_args():
     parser.add_argument('-d', '--datastore',
                         required=True,
                         help='Name of Datastore to create VM in')
-
-    parser.add_argument('-datacenter',
-                        required=True,
-                        help='Name of the datacenter to create VM in.')
 
     parser.add_argument('-folder',
                         required=True,
@@ -243,18 +238,14 @@ def connect_host(args):
 def main():
     args = get_args()
     service_instance = connect_host(args) 
-    
     content = service_instance.RetrieveContent()
     vmfolder = get_obj(content, [vim.Folder], args.folder)
     resource_pool = get_obj(content, [vim.ResourcePool], args.Rpool)
-
-
     datastore = get_obj(content, [vim.Datastore], args.datastore) 
-
     os_types = ["ubuntuGuest", "ubuntu64Guest", "windows8Server64Guest", \
                 "windows9Server64Guest", "rhel6Guest", "rhel6_64Guest", \
                 "rhel7_64Guest", "sles12_64Guest", "centos7_64Guest","winLonghornGuest"]
-    vm = None
+    
     for os in os_types :
         vm_name = args.vmname + "-" + os
         create_dummy_vm(vm_name, service_instance, vmfolder, resource_pool,
