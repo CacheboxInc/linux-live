@@ -6,7 +6,6 @@ Run script cmd :-  python3.6 create_vm.py -s 192.168.10.122
                                           -u administrator@vsphere.local 
                                           -p Root@123 
                                           -d OC_Datastore 
-                                          -datacenter OC_Datacenter
                                           -folder 'vm' -Rpool OC_RPool  
                                           -vmname mz -nw 'VM Network'
                                           -iso_path 'microVM-IP.iso'
@@ -27,18 +26,11 @@ except NameError:
     pass
 
 def get_args():
-    """
-    Use the tools.cli methods and then add a few more arguments.
-    """
     parser = cli.build_arg_parser()
 
     parser.add_argument('-d', '--datastore',
                         required=True,
                         help='Name of Datastore to create VM in')
-
-    parser.add_argument('-datacenter',
-                        required=True,
-                        help='Name of the datacenter to create VM in.')
 
     parser.add_argument('-folder',
                         required=True,
@@ -51,7 +43,7 @@ def get_args():
     parser.add_argument('-vmname',
                          required=True,
                          help='Name of VM to create')
- 
+
     parser.add_argument('-nw',
                         required=True,
                         help='Name of network.')
@@ -59,7 +51,6 @@ def get_args():
     parser.add_argument('-iso_path',
                         required=True,
                         help='ISO path.')
-
 
     args = parser.parse_args()
 
@@ -75,7 +66,7 @@ def get_obj(content, vimtype, name):
             break
     return obj
 
-def create_dummy_vm(vm_name, service_instance, vm_folder, resource_pool, datastore):
+def create_dummy_vm(vm_name, service_instance, vm_folder, resource_pool, datastore, guestId):
     datastore_path = '[' + datastore + '] ' + vm_name
 
     # bare minimum VM shell, no disks. Feel free to edit
@@ -84,11 +75,12 @@ def create_dummy_vm(vm_name, service_instance, vm_folder, resource_pool, datasto
                                suspendDirectory=None,
                                vmPathName=datastore_path)
 
+    # For EFI boot add firmware='EFI'
     config = vim.vm.ConfigSpec(name=vm_name, memoryMB=2048, numCPUs=2,
-                               files=vmx_file, guestId='centos64guest',
+                               files=vmx_file, guestId=guestId,
                                version='vmx-13')
-
-    print("Creating VM {}...".format(vm_name))
+    
+    print("\nCreating VM {}...".format(vm_name))
     task = vm_folder.CreateVM_Task(config=config, pool=resource_pool)
     tasks.wait_for_tasks(service_instance, [task])
     tasks.wait_for_tasks(service_instance, [task])
@@ -163,9 +155,9 @@ def find_device(vm, device_type):
             result.append(dev)
     return result
 
-def attach_iso(si, datastore, args,  boot=True):
+def attach_iso(si, datastore, args, vm_name, boot=True):
     dc = si.content.rootFolder.childEntity[0]
-    vm = si.content.searchIndex.FindChild(dc.vmFolder, args.vmname)
+    vm = si.content.searchIndex.FindChild(dc.vmFolder, vm_name)
 
     spec = vim.vm.device.VirtualDeviceSpec()
     spec.device = vim.vm.device.VirtualCdrom()
@@ -179,8 +171,6 @@ def attach_iso(si, datastore, args,  boot=True):
         print("Could not find a free IDE controller "
                 "on '%s' to attach ISO '%s'", args.vmname, iso_path)
         return
-
-    #iso_path = 'microVM-IP.iso'
 
     spec.device.backing = vim.vm.device.VirtualCdrom.IsoBackingInfo()
     spec.device.backing.fileName = "[%s] %s" % (args.datastore, args.iso_path)
@@ -206,32 +196,64 @@ def attach_iso(si, datastore, args,  boot=True):
 def power_on(vm):
     print("Power On VM ...")
     WaitForTask(vm.PowerOn())
+    print("--------------------")
 
-def main():
+def delete_vms():
+    parser = cli.build_arg_parser()
     
-    args = get_args()
-    service_instance = connect.SmartConnectNoSSL(host=args.host,
-                                                user=args.user,
-                                                pwd=args.password,
-                                                port=int(args.port))
-    if not service_instance:
+    parser.add_argument('-vmname',
+            required=True,
+            help='Name of VM to create')
+
+    args = parser.parse_args()
+    si = connect_host(args)
+    name = args.vmname
+    dc = si.content.rootFolder.childEntity[0]
+    
+    os_types = ["ubuntuGuest", "ubuntu64Guest", "windows8Server64Guest", \
+                "windows9Server64Guest", "rhel6Guest", "rhel6_64Guest", \
+                "rhel7_64Guest", "sles12_64Guest", "centos7_64Guest","winLonghornGuest"]
+
+    for os in os_types :
+        vm_name = name + "-" + os
+        vm = si.content.searchIndex.FindChild(dc.vmFolder, vm_name)
+        print("\nPower off {} ..".format(vm_name))
+        WaitForTask(vm.PowerOffVM_Task())
+        
+        print("Deleting vm {}...".format(vm_name))
+        WaitForTask(vm.Destroy_Task())
+
+def connect_host(args):
+    si = connect.SmartConnectNoSSL(host=args.host,
+                                   user=args.user,
+                                   pwd=args.password,
+                                   port=int(args.port))
+    if not si:
         print("Could not connect using specified username and password")
         return -1
     print("Connected to vCenter")
-    atexit.register(connect.Disconnect, service_instance)
-    
+    atexit.register(connect.Disconnect, si)
+    return si
+
+def main():
+    args = get_args()
+    service_instance = connect_host(args) 
     content = service_instance.RetrieveContent()
     vmfolder = get_obj(content, [vim.Folder], args.folder)
     resource_pool = get_obj(content, [vim.ResourcePool], args.Rpool)
-    vm_name = args.vmname
-
     datastore = get_obj(content, [vim.Datastore], args.datastore) 
-    create_dummy_vm(vm_name, service_instance, vmfolder, resource_pool,
-                        args.datastore)
-    vm = get_obj(content, [vim.VirtualMachine], vm_name)
-    add_nic(service_instance, vm, args.nw)
+    os_types = ["ubuntuGuest", "ubuntu64Guest", "windows8Server64Guest", \
+                "windows9Server64Guest", "rhel6Guest", "rhel6_64Guest", \
+                "rhel7_64Guest", "sles12_64Guest", "centos7_64Guest","winLonghornGuest"]
     
-    attach_iso(service_instance, datastore, args)
+    for os in os_types :
+        vm_name = args.vmname + "-" + os
+        create_dummy_vm(vm_name, service_instance, vmfolder, resource_pool,
+                        args.datastore, os)
+        
+        vm = get_obj(content, [vim.VirtualMachine], vm_name)
+        add_nic(service_instance, vm, args.nw)
+        attach_iso(service_instance, datastore, args, vm_name)
 
 if __name__ == "__main__":
     main()
