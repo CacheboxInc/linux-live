@@ -56,17 +56,6 @@ umount_all /run2
 detach_free_loops
 umount_all /run2
 
-# eject cdrom device if we were running from it
-for i in $(cat /proc/sys/dev/cdrom/info | grep name); do
-   if [ "$DEVICE" = "/dev/$i" ]; then
-      echo "[  OK  ] Attemptiong to eject /dev/$i..."
-      eject /dev/$i
-      echo "[  OK  ] CD/DVD tray will close in 6 seconds..."
-      sleep 6
-      eject -t /dev/$i
-   fi
-done
-
 debug_shell
 
 debug_log $1 -f
