@@ -1,10 +1,10 @@
-Create MicroVM-ISO :- 
+# Create MicroVM-ISO :- 
 
 * Install Ubuntu18.04
-
+* apt install open-vm-tools # 2:11.0.5-4ubuntu0.18.04.1
 * git clone https://github.com/CacheboxInc/linux-live.git in /tmp
 
-* MicroVM :-
+# MicroVM :-
    
    - Copy microvm binary in /bin directory
    - Copy all dependencies from tools/dependancies to /usr/lib
@@ -18,7 +18,7 @@ Create MicroVM-ISO :-
    - systemctl enable microservice.service
    - Reboot machine and verify microvm service
 
-# Fix open-vm-tools
+# open-vm-tools
 
 * The default open-vm-tools does a reboot of the VM during guest customization. This is a problem because we cannot persist the changes when booting from ISO. We are only interested in the network configuration and not the other functionality provided by cloud-init. For this reason we have modified open-vm-tools not to reboot after the guest-customization. The step below is the procedure to configure this.
 * Make a clone of the Ubuntu18.04 on which we will install the compilation environment. We won't do it directly on the MicroVM as it will bloat the size. Instead we build on a different VM and copy the final .so files. All steps below are on the clone.
@@ -29,8 +29,10 @@ Create MicroVM-ISO :-
 * follow the build procedure in README of open-vm-tools
 * the configure script will
 * ./configure --disable-multimon --without-x  --without-kernel-modules
+* make / make install (follow the README)
+* now copy cp /usr/local/lib/libDeployPkg.so on MICRO-VM:/usr/lib/libDeployPkg.so.0
 
-* Live ISO :-
+# Live ISO :-
 
    - You will need the following packages to be installed:
       - squashfs-tools
