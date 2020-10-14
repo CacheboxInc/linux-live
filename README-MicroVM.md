@@ -16,6 +16,7 @@
    - systemctl start microservice.service
    - systemctl status microservice.service
    - systemctl enable microservice.service
+   - Add photon ssh key for passwordless ssh
    - Reboot machine and verify microvm service
 
 # open-vm-tools
@@ -25,7 +26,7 @@
 * git clone https://github.com/CacheboxInc/open-vm-tools.git
 * git checkout stable-11.0.5
 * install open-vm-tools/bionic-updates,now 2:11.0.5-4ubuntu0.18.04.1
-* apt install autoconf libxmlsec1-dev  libxml2-dev  libglib2.0-dev libmspack-dev libpam0g-dev
+* apt install autoconf libxmlsec1-dev  libxml2-dev  libglib2.0-dev libmspack-dev libpam0g-dev libx11-dev libtool libxext-dev libxinerama-dev libxi-dev libxrender-dev libxrandr-dev libgdk-pixbuf2.0-dev libgtk-3-dev libgtkmm-2.4-dev libgtkmm-3.0-dev
 * follow the build procedure in README of open-vm-tools
 * the configure script will
 * ./configure --disable-multimon --without-x  --without-kernel-modules
