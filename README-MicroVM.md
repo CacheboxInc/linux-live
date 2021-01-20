@@ -1,8 +1,12 @@
 # Create MicroVM-ISO :- 
 
-* Install Ubuntu18.04
-* apt install open-vm-tools # 2:11.0.5-4ubuntu0.18.04.1
+* Create VM and attach mini_ubuntu.iso http://192.168.1.177/5TB_NFS/ISO/mini_ubuntu18.04.iso
+* Perform installation
+* apt install open-vm-tools, openssh-server, lssci
+* Create clone of this VM
+* git clone https://github.com/Aukshan-PIO/open-vm-tools.git and 
 * git clone https://github.com/CacheboxInc/linux-live.git in /tmp
+* Build procedure open-vm-tools
 
 # MicroVM :-
    
@@ -31,7 +35,7 @@
 * the configure script will
 * ./configure --disable-multimon --without-x  --without-kernel-modules
 * make / make install (follow the README)
-* now copy cp /usr/local/lib/libDeployPkg.so on MICRO-VM:/usr/lib/libDeployPkg.so.0
+* now copy cp /usr/local/lib/libDeployPkg.so.0.0 on MICRO-VM:/usr/lib/libDeployPkg.so.0.0
 
 # Live ISO :-
 
