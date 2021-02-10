@@ -3,7 +3,14 @@
 * Create VM and attach mini_ubuntu.iso http://192.168.1.177/5TB_NFS/ISO/mini_ubuntu18.04.iso
 * Perform installation
 * apt install open-vm-tools, openssh-server, lssci
-* add "dhcp-identifier: mac" in "/etc/netplan/01-netcfg.yaml"
+* add following in "/etc/netplan/01-netcfg.yaml"
+    ethernets:
+      all:
+        match:
+          name: ens*
+        dhcp4: yes
+        dhcp-identifier: mac
+   
 * Create clone of this VM
 * git clone https://github.com/Aukshan-PIO/open-vm-tools.git and 
 * git clone https://github.com/CacheboxInc/linux-live.git in /tmp
